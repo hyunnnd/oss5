@@ -1,154 +1,166 @@
-import React, { useState, useEffect } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import { Modal, Button } from 'react-bootstrap';
+<!DOCTYPE html>
+<html lang="en">
 
-
-function ShowList() {
-    const [students, setstudents] = useState([]);
-    const [showadd, setadd] = useState(false);
-    const [showedit, setedit] = useState(false);
-    const [newstudent, setnew] = useState({ num: '', name: '', age: '', email: '' });
-    const [currentstudent, setcurrent] = useState({ id: '', num: '', name: '', age: '', email: '' });
-
-    useEffect(() => {
-        getdata();
-    }, []);
-
-    const getdata = () => {
-        fetch('https://6729f0746d5fa4901b6f1089.mockapi.io/my_data')
-            .then(response => response.json())
-            .then(data => setstudents(data))
-            .catch(error => console.error('Error fetching data:', error));
-    };
-
-    const inputChange = (props, setstate) => {
-        const { id, value } = props.target;
-        setstate(prevState => ({ ...prevState, [id]: value }));
-    };
-
-    const addStudent = () => {
-        if (!newstudent.num || !newstudent.name || !newstudent.age || !newstudent.email) {
-            alert("All fields are required.");
-            return;
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My ajax</title>
+    <script>
+        window.onload = function () {
+            let get = document.getElementById("get");
+            let add = document.getElementById("add");
+            get.addEventListener("click", getdata);
+            add.addEventListener("click", postdata);
+        }
+        function getdata() {
+            let contents = document.getElementById("contents");
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", "https://6729f0746d5fa4901b6f1089.mockapi.io/my_data");
+            xhr.setRequestHeader("content-type", "application/json");
+            xhr.send();
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const res = JSON.parse(xhr.response);
+                    contents.innerHTML = makelist(res);
+                } else {
+                    console.log(xhr.status, xhr.statusText);
+                }
+            }
         }
 
-        fetch('https://6729f0746d5fa4901b6f1089.mockapi.io/my_data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newstudent),
-        })
-            .then(response => {
-                if (response.status === 201) {
-                    getdata();
-                    setadd(false);
-                    setnew({ num: '', name: '', age: '', email: '' });
-                } else {
-                    console.error('Error adding student:', response.statusText);
-                }
-            });
-    };
+        function postdata() {
+            const id = document.getElementById("id");
+            const name = document.getElementById("name");
+            const age = document.getElementById("age");
+            const email = document.getElementById("email");
 
-    const editstudent = () => {
-        if (!currentstudent.num || !currentstudent.name || !currentstudent.age || !currentstudent.email) {
-            alert("All fields are required.");
-            return;
+            if (!document.getElementById("name").value.trim()) {
+                alert("Name is required.");
+                return;
+            }
+            else if (!document.getElementById("age").value.trim()) {
+                alert("Age is required.");
+                return;
+            }
+            else if (!document.getElementById("email").value.trim()) {
+                alert("Email is required.");
+                return;
+            }
+            else if (!document.getElementById("id").value.trim()) {
+                alert("Id is required.");
+                return;
+            }
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "https://6729f0746d5fa4901b6f1089.mockapi.io/my_data");
+            xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+
+            const data = { id: id.value, name: name.value, age: age.value, email: email.value };
+            xhr.send(JSON.stringify(data));
+            xhr.onload = () => {
+                if (xhr.status === 201) {
+                    const res = JSON.parse(xhr.response);
+                    adddata(res);
+                    id.value = "";
+                    name.value = "";
+                    age.value = "";
+                    email.value = "";
+                } else {
+                    console.log(xhr.status, xhr.statusText);
+                }
+            }
         }
 
-        fetch(`https://6729f0746d5fa4901b6f1089.mockapi.io/my_data/${currentstudent.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(currentstudent),
-        })
-            .then(response => {
-                if (response.status === 200) {
-                    getdata();
-                    setedit(false);
+        function adddata(user) {
+            let contents = document.getElementById("contents");
+            const newItem = 
+        <li id="user-${user.id}">
+            ${user.id} ${user.name} (${user.age}) ${user.email}
+            <button onclick="editdata(${user.id})">Edit</button>
+            <button onclick="deletedata(${user.id})">Delete</button>
+        </li>;
+            contents.querySelector("ul").insertAdjacentHTML("beforeend", newItem);
+        }
+
+
+
+        function makelist(data) {
+            let str = "<ul>";
+            for (let i in data) {
+                str += "<li id='user-" + data[i].id + "'>" + data[i].id + " " + data[i].name + " (" + data[i].age + ") " + data[i].email +
+                    " <button onclick='editdata(" + data[i].id + ")'>Edit</button>" +
+                    " <button onclick='deletedata(" + data[i].id + ")'>Delete</button></li>";
+            }
+            str += "</ul>";
+            return str;
+        }
+
+        function deletedata(id) {
+            const xhr = new XMLHttpRequest();
+            xhr.open("DELETE", "https://6729f0746d5fa4901b6f1089.mockapi.io/my_data/" + id);
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    document.getElementById("user-" + id).remove();
                 } else {
-                    console.error('Error editing student:', response.statusText);
+                    console.log(xhr.status, xhr.statusText);
                 }
-            });
-    };
+            }
+            xhr.send();
+        }
 
-    const deletestudent = (id) => {
-        fetch(`https://6729f0746d5fa4901b6f1089.mockapi.io/my_data/${id}`, { method: 'DELETE' })
-            .then(response => {
-                if (response.status === 200) {
-                    getdata();
+        function editdata(id) {
+            const newName = prompt("Enter new name:");
+            const newAge = prompt("Enter new age:");
+            const newEmail = prompt("Enter new email:");
+            if (!newName) {
+                alert("Name is required.");
+                return;
+            }
+            else if (!newAge) {
+                alert("Age is required.");
+                return;
+            }
+            else if (!newEmail) {
+                alert("Email is required.");
+                return;
+            }
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("PUT", "https://6729f0746d5fa4901b6f1089.mockapi.io/my_data/" + id);
+            xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+
+            const data = { name: newName, age: parseInt(newAge), email: newEmail };
+            xhr.send(JSON.stringify(data));
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const user = JSON.parse(xhr.response);
+                    document.getElementById("user-" + id).innerHTML =
+                        user.id + " " + user.name + " (" + user.age + ") " + user.email +
+                        " <button onclick='editdata(" + user.id + ")'>Edit</button>" +
+                        " <button onclick='deletedata(" + user.id + ")'>Delete</button>";
                 } else {
-                    console.error('Error deleting student:', response.statusText);
+                    console.log(xhr.status, xhr.statusText);
                 }
-            });
-    };
+            }
+        }
+    </script>
+</head>
 
-    const openedit = (student) => {
-        setcurrent(student);
-        setedit(true);
-    };
+<body>
+    <h1>Student list</h1>
+    <button id="get">Get students</button>
+    <ul id="contents"></ul>
 
-    return (
-        <div className="container mt-5">
-            <div className="text-center mb-4">
-                <h1 className="display-6">Student List</h1>
-                <Button variant="outline-primary" onClick={getdata}>Get Students</Button>
-                <Button variant="outline-success" onClick={() => setadd(true)}>Add Student</Button>
-            </div>
-            <div className="card shadow-sm">
-                <div className="card-body">
-                    <ul className="list-group">
-                        {students.map(student => (
-                            <li key={student.id} className="list-group-item d-flex justify-content-between align-items-center">
-                                {student.num}, {student.name} ({student.age}) {student.email}
-                                <span>
-                                    <Button variant="outline-primary" size="sm" onClick={() => openedit(student)}>Edit</Button>
-                                    <Button variant="outline-danger" size="sm" onClick={() => deletestudent(student.id)}>Delete</Button>
-                                </span>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </div>
+    <h2>Add new student</h2>
+    <label for="id">Id:</label>
+    <input type="text" id="id" required>
+    <label for="name">Name:</label>
+    <input type="text" id="name" required>
+    <label for="age">Age:</label>
+    <input type="number" id="age" required>
+    <label for="email">Email:</label>
+    <input type="email" id="email" required>
+    <button id="add">Add student</button>
+</body>
 
-            <Modal show={showadd} onHide={() => setadd(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Add New Student</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <label>Num:</label>
-                    <input type="text" id="num" className="form-control" value={newstudent.num} onChange={(props) => inputChange(props, setnew)} />
-                    <label>Name:</label>
-                    <input type="text" id="name" className="form-control" value={newstudent.name} onChange={(props) => inputChange(props, setnew)} />
-                    <label>Age:</label>
-                    <input type="number" id="age" className="form-control" value={newstudent.age} onChange={(props) => inputChange(props, setnew)} />
-                    <label>Email:</label>
-                    <input type="email" id="email" className="form-control" value={newstudent.email} onChange={(props) => inputChange(props, setnew)} />
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setadd(false)}>Close</Button>
-                    <Button variant="primary" onClick={addStudent}>Add Student</Button>
-                </Modal.Footer>
-            </Modal>
-
-            <Modal show={showedit} onHide={() => setedit(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Edit Student</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <label>Num:</label>
-                    <input type="text" id="num" className="form-control" value={currentstudent.num} onChange={(props) => inputChange(props, setcurrent)} />
-                    <label>Name:</label>
-                    <input type="text" id="name" className="form-control" value={currentstudent.name} onChange={(props) => inputChange(props, setcurrent)} />
-                    <label>Age:</label>
-                    <input type="number" id="age" className="form-control" value={currentstudent.age} onChange={(props) => inputChange(props, setcurrent)} />
-                    <label>Email:</label>
-                    <input type="email" id="email" className="form-control" value={currentstudent.email} onChange={(props) => inputChange(props, setcurrent)} />
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setedit(false)}>Close</Button>
-                    <Button variant="warning" onClick={editstudent}>Save Changes</Button>
-                </Modal.Footer>
-            </Modal>
-        </div>
-    );
-}
-
-export default ShowList;
+</html>
